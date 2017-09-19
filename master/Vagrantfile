@@ -51,14 +51,16 @@ EOF"
     master.vm.provision "shell",
       inline: "chown $(id -u):$(id -g) $HOME/.kube/config"  
 
+    $script = <<SCRIPT
+export kubever=$(kubectl version | base64 | tr -d '\n')
+kubectl apply -f "https://cloud.weave.works/k8s/net?k8s-version=$kubever"
+SCRIPT
+
     master.vm.provision "shell",
-      inline: "kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml"
-  
+      inline: $script  
+      
     master.vm.provision "shell",
-      inline: "kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel-rbac.yml"
-  
-    # master.vm.provision "shell",
-    #  inline: "kubectl taint nodes --all node-role.kubernetes.io/master-"
+      inline: "kubectl taint nodes --all node-role.kubernetes.io/master-"
 
   end  
 end
