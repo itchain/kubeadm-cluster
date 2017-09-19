@@ -14,9 +14,7 @@ Vagrant.configure("2") do |config|
 
     master.vm.synced_folder "../example", "/vagrant"
     
-    master.vm.network "private_network", ip: "192.168.33.10", netmask: "255.255.255.0",
-      auto_config: true,
-      virtualbox__intnet: "k8s-net"
+    master.vm.network "private_network", ip: "192.168.33.10"
     
       master.vm.provider "virtualbox" do |vb|
         vb.name = "master"
@@ -59,8 +57,8 @@ EOF"
     master.vm.provision "shell",
       inline: "kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel-rbac.yml"
   
-    master.vm.provision "shell",
-      inline: "kubectl taint nodes --all node-role.kubernetes.io/master-"
+    # master.vm.provision "shell",
+    #  inline: "kubectl taint nodes --all node-role.kubernetes.io/master-"
 
   end  
 end
