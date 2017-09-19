@@ -1,0 +1,66 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure("2") do |config|
+
+  config.ssh.insert_key = true
+  config.ssh.forward_agent = true
+
+  config.vm.define "master" do |master|
+
+    master.vm.box = "ubuntu/xenial64"
+
+    master.vm.hostname = "master"
+
+    master.vm.synced_folder "../example", "/vagrant"
+    
+    master.vm.network "private_network", ip: "192.168.33.10", netmask: "255.255.255.0",
+      auto_config: true,
+      virtualbox__intnet: "k8s-net"
+    
+      master.vm.provider "virtualbox" do |vb|
+        vb.name = "master"
+        vb.memory = 1024
+        vb.gui = false
+    end
+
+    master.vm.provision "shell",
+      inline: "apt-get update && apt-get install -y apt-transport-https"
+    
+    master.vm.provision "shell",
+      inline: "curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -"
+
+    master.vm.provision "shell",
+      inline: "cat <<EOF > /etc/apt/sources.list.d/kubernetes.list
+deb http://apt.kubernetes.io/ kubernetes-xenial main
+EOF"
+  
+    master.vm.provision "shell",
+      inline: "apt-get update"
+
+    master.vm.provision "shell",
+      inline: "apt-get install -y kubelet kubeadm kubectl kubernetes-cni docker.io"
+  
+    master.vm.provision "shell",
+      inline: "kubeadm init --token=f4f327.2195e4e194e45b0b --pod-network-cidr=10.244.0.0/16 --apiserver-advertise-address=192.168.33.10"
+
+    master.vm.provision "shell",
+      inline: "mkdir -p $HOME/.kube"
+
+    master.vm.provision "shell",
+      inline: "cp -i /etc/kubernetes/admin.conf $HOME/.kube/config"
+  
+    master.vm.provision "shell",
+      inline: "chown $(id -u):$(id -g) $HOME/.kube/config"  
+
+    master.vm.provision "shell",
+      inline: "kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml"
+  
+    master.vm.provision "shell",
+      inline: "kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel-rbac.yml"
+  
+    master.vm.provision "shell",
+      inline: "kubectl taint nodes --all node-role.kubernetes.io/master-"
+
+  end  
+end
